@@ -1,0 +1,1 @@
+export { CustomerAuthProvider } from '../CustomerAuthProvider';
