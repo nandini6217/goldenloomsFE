@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, User, LogOut, Menu, X, Heart, GitCompare } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { ShoppingBag, User, LogOut, Menu, X, Heart, GitCompare, Search } from 'lucide-react';
 import { getCompareIds } from '@/lib/compare';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/store/cart-store';
@@ -11,14 +12,37 @@ import { setAuthToken } from '@/lib/api';
 import { MegaMenu } from '@/components/MegaMenu';
 import { MobileShopAccordion } from '@/components/MobileShopAccordion';
 import { BRAND_NAME } from '@/config/constants';
+import {
+  LEVEL1,
+  useHomeCategoryParams,
+  setHomeCategoryParams,
+  HOME_CATEGORY_TAB_STYLES,
+} from '@/components/home/HomeCategoryNav';
 
 export function Header() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const isHomePage = pathname === '/';
+  const { primary, secondary } = useHomeCategoryParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [compareCount, setCompareCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const items = useCartStore((s) => s.items);
   const count = mounted ? items.reduce((c, i) => c + i.qty, 0) : 0;
   const { user, isLoggedIn, logout } = useAuthStore();
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    const categoryParam =
+      primary === 'resin' ? 'RESIN' : primary === 'woollen' ? 'HANDLOOM' : primary === 'others' ? 'OTHERS' : undefined;
+    const params = new URLSearchParams();
+    params.set('search', q);
+    if (categoryParam) params.set('category', categoryParam);
+    router.push(`/products?${params.toString()}`);
+  };
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -33,7 +57,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-primary/10 bg-white/95 backdrop-blur">
-      <div className="container-custom mx-auto flex h-14 min-h-14 flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6 md:h-16 md:flex-nowrap md:py-0">
+      <div className="container-custom mx-auto flex h-14 min-h-14 flex-wrap items-center justify-between gap-2 px-3 py-3 sm:px-6 md:h-16 md:flex-nowrap md:py-0">
         <Link
           href="/"
           className="font-display text-lg font-semibold text-primary sm:text-xl shrink-0"
@@ -42,17 +66,35 @@ export function Header() {
           {BRAND_NAME}
         </Link>
 
+        {/* Desktop: search in top bar (all pages) */}
+        <form
+          onSubmit={handleSearchSubmit}
+          className="hidden min-w-0 flex-1 max-w-md mx-2 md:flex md:items-center md:gap-2 md:rounded-xl md:bg-neutral-100 md:px-3 md:py-2 lg:mx-4"
+        >
+          <Search className="h-4 w-4 shrink-0 text-neutral-500" aria-hidden />
+          <input
+            type="search"
+            placeholder="Search products"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-neutral-500"
+            aria-label="Search products"
+          />
+        </form>
+
         {/* Desktop nav */}
         <nav className="hidden items-center gap-4 md:flex md:gap-6">
           <MegaMenu />
           <Link href="/compare" className="flex items-center gap-1 text-primary hover:text-accent" title="Compare">
             <GitCompare className="h-5 w-5" />
+            <span className="hidden md:inline text-sm font-medium">Compare</span>
             {compareCount > 0 && (
               <span className="text-xs font-medium text-primary/80">({compareCount})</span>
             )}
           </Link>
           <Link href="/cart" className="relative flex items-center gap-1 text-primary hover:text-accent">
             {mounted ? <ShoppingBag className="h-5 w-5" /> : <span className="inline-block h-5 w-5 shrink-0" aria-hidden />}
+            <span className="hidden md:inline text-sm font-medium">Cart</span>
             {count > 0 && (
               <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs font-medium text-white">
                 {count}
@@ -62,6 +104,7 @@ export function Header() {
           {mounted && isLoggedIn() && (
             <Link href="/wishlist" className="flex items-center gap-1 text-primary hover:text-accent" title="Wishlist">
               <Heart className="h-5 w-5" />
+              <span className="hidden md:inline text-sm font-medium">Wishlist</span>
             </Link>
           )}
           {/* Auth UI only after mount to avoid hydration mismatch (auth comes from persisted store) */}
@@ -128,6 +171,42 @@ export function Header() {
           </Button>
         </div>
       </div>
+
+      {/* Mobile: search bar + Level 1 category row (home page only, sticky with header) */}
+      {isHomePage && (
+        <div className="border-t border-primary/10 px-4 py-2 md:hidden space-y-2">
+          <form
+            onSubmit={handleSearchSubmit}
+            className="flex w-full items-center gap-2 rounded-xl bg-neutral-100 px-3.5 py-2"
+          >
+            <Search className="h-4 w-4 shrink-0 text-neutral-500" aria-hidden />
+            <input
+              type="search"
+              placeholder="Search products"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="min-w-0 flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-neutral-500"
+              aria-label="Search products"
+            />
+          </form>
+          <div
+            className={HOME_CATEGORY_TAB_STYLES.container}
+            aria-label="Filter by category"
+          >
+            {LEVEL1.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setHomeCategoryParams(router, item.id, secondary)}
+                className={`${HOME_CATEGORY_TAB_STYLES.tab} ${primary === item.id ? HOME_CATEGORY_TAB_STYLES.active : HOME_CATEGORY_TAB_STYLES.inactive}`}
+                aria-pressed={primary === item.id}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Mobile dropdown menu */}
       {mobileMenuOpen && (

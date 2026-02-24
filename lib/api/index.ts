@@ -10,3 +10,4 @@ export * from './wishlist';
 export * from './reviews';
 export * from './coupons';
 export * from './campaigns';
+export * from './events';

@@ -7,7 +7,8 @@ export function Footer() {
   return (
     <footer className="mt-auto bg-primary text-secondary">
       <div className="container-custom py-12">
-        <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+        <div className="lg:max-w-5xl lg:mx-auto">
+          <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between md:gap-12 lg:gap-16">
           <div>
             <p className="font-display text-2xl font-semibold text-accent">{BRAND_NAME}</p>
             <p className="mt-2 max-w-sm text-sm opacity-90">
@@ -21,6 +22,7 @@ export function Footer() {
                 <li><Link href="/products" className="hover:text-accent">All Products</Link></li>
                 <li><Link href="/products?category=RESIN" className="hover:text-accent">Resin Collection</Link></li>
                 <li><Link href="/products?category=HANDLOOM" className="hover:text-accent">Handloom Collection</Link></li>
+                <li><Link href="/products?category=OTHERS" className="hover:text-accent">Others Collection</Link></li>
                 <li><Link href="/campaigns" className="hover:text-accent">Campaigns</Link></li>
               </ul>
             </div>
@@ -29,6 +31,7 @@ export function Footer() {
               <FooterSocialLinks />
             </div>
           </div>
+        </div>
         </div>
         <div className="divider-gold mt-10" />
         <p className="mt-6 text-center text-sm opacity-80">

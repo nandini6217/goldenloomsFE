@@ -9,11 +9,21 @@ import { Label } from '@/components/ui/label';
 import { PhotoUploader } from '@/components/admin/PhotoUploader';
 import Link from 'next/link';
 
+const SUBCATEGORY_OPTIONS = [
+  { value: '', label: 'None' },
+  { value: 'HOME_DECOR', label: 'Home Decor' },
+  { value: 'FASHION', label: 'Fashion' },
+  { value: 'SPIRITUAL', label: 'Spiritual' },
+  { value: 'GIFTS', label: 'Gifts' },
+  { value: 'OTHERS', label: 'Others' },
+] as const;
+
 type Product = {
   _id: string;
   name: string;
   slug: string;
   category: string;
+  subcategory?: string | null;
   price: number;
   discountedPrice?: number | null;
   expectedDeliveryTime?: string | null;
@@ -31,7 +41,8 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState({
     name: '',
     slug: '',
-    category: 'RESIN' as 'RESIN' | 'HANDLOOM',
+    category: 'RESIN' as 'RESIN' | 'HANDLOOM' | 'OTHERS',
+    subcategory: '' as string,
     price: 0,
     discountedPrice: null as number | null,
     expectedDeliveryTime: '7-10 days',
@@ -55,6 +66,7 @@ export default function AdminProductsPage() {
       name: '',
       slug: '',
       category: 'RESIN',
+      subcategory: '',
       price: 0,
       discountedPrice: null,
       expectedDeliveryTime: '7-10 days',
@@ -71,7 +83,8 @@ export default function AdminProductsPage() {
     setForm({
       name: p.name,
       slug: p.slug,
-      category: p.category as 'RESIN' | 'HANDLOOM',
+      category: p.category as 'RESIN' | 'HANDLOOM' | 'OTHERS',
+      subcategory: p.subcategory ?? '',
       price: p.price,
       discountedPrice: p.discountedPrice ?? null,
       expectedDeliveryTime: p.expectedDeliveryTime ?? '7-10 days',
@@ -85,7 +98,7 @@ export default function AdminProductsPage() {
   const saveCreate = async () => {
     if (!form.name || !form.slug || form.price <= 0) return;
     try {
-      await productsApi.create(form);
+      await productsApi.create({ ...form, subcategory: form.subcategory || null });
       setCreating(false);
       load();
     } catch (e) {
@@ -97,7 +110,7 @@ export default function AdminProductsPage() {
   const saveEdit = async () => {
     if (!editing || !form.name || !form.slug || form.price <= 0) return;
     try {
-      await productsApi.update(editing._id, form);
+      await productsApi.update(editing._id, { ...form, subcategory: form.subcategory || null });
       setEditing(null);
       load();
     } catch (e) {
@@ -142,10 +155,23 @@ export default function AdminProductsPage() {
               <select
                 className="flex h-11 w-full rounded-[12px] border border-primary/20 bg-white px-4"
                 value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value as 'RESIN' | 'HANDLOOM' })}
+                onChange={(e) => setForm({ ...form, category: e.target.value as 'RESIN' | 'HANDLOOM' | 'OTHERS' })}
               >
                 <option value="RESIN">RESIN</option>
                 <option value="HANDLOOM">HANDLOOM</option>
+                <option value="OTHERS">OTHERS</option>
+              </select>
+            </div>
+            <div>
+              <Label>Sub type (optional)</Label>
+              <select
+                className="flex h-11 w-full rounded-[12px] border border-primary/20 bg-white px-4"
+                value={form.subcategory}
+                onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+              >
+                {SUBCATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt.value || 'none'} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -220,10 +246,23 @@ export default function AdminProductsPage() {
               <select
                 className="flex h-11 w-full rounded-[12px] border border-primary/20 bg-white px-4"
                 value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value as 'RESIN' | 'HANDLOOM' })}
+                onChange={(e) => setForm({ ...form, category: e.target.value as 'RESIN' | 'HANDLOOM' | 'OTHERS' })}
               >
                 <option value="RESIN">RESIN</option>
                 <option value="HANDLOOM">HANDLOOM</option>
+                <option value="OTHERS">OTHERS</option>
+              </select>
+            </div>
+            <div>
+              <Label>Sub type (optional)</Label>
+              <select
+                className="flex h-11 w-full rounded-[12px] border border-primary/20 bg-white px-4"
+                value={form.subcategory}
+                onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+              >
+                {SUBCATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt.value || 'none'} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
             <div>

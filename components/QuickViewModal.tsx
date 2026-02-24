@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { productsApi } from '@/lib/api';
+import { productsApi, wishlistApi } from '@/lib/api';
+import { eventsApi } from '@/lib/api/events';
 import { useCartStore } from '@/store/cart-store';
+import { useAuthStore } from '@/store/auth-store';
+import { useWishlist } from '@/hooks/useWishlist';
 import { Button } from '@/components/ui/button';
 import { ProductPrice } from '@/components/product/ProductPrice';
 import { X } from 'lucide-react';
@@ -16,6 +19,7 @@ type Product = {
   description?: string;
   images?: string[];
   stock?: number;
+  category?: string;
 };
 
 type QuickViewModalProps = {
@@ -27,19 +31,36 @@ export function QuickViewModal({ productId, onClose }: QuickViewModalProps) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
+  const hasToken = !!useAuthStore((s) => s.token);
+  const { productIds: wishlistIds, refetch: refetchWishlist } = useWishlist(hasToken);
+  const zoomTrackedRef = useRef(false);
 
   useEffect(() => {
     if (!productId) {
       setProduct(null);
+      zoomTrackedRef.current = false;
       return;
     }
     setLoading(true);
+    zoomTrackedRef.current = false;
     productsApi
       .get(productId)
       .then(setProduct)
       .catch(() => setProduct(null))
       .finally(() => setLoading(false));
   }, [productId]);
+
+  useEffect(() => {
+    if (!product || zoomTrackedRef.current) return;
+    zoomTrackedRef.current = true;
+    eventsApi?.track?.({
+      event: 'product_zoom',
+      productId: product._id,
+      productName: product.name,
+      category: product.category,
+      source: 'quick_view',
+    });
+  }, [product]);
 
   if (!productId) return null;
 
@@ -54,7 +75,7 @@ export function QuickViewModal({ productId, onClose }: QuickViewModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
       <div
-        className="relative z-10 w-full max-w-lg rounded-[12px] bg-white shadow-lg border border-primary/10 overflow-hidden"
+        className="relative z-10 w-full max-w-lg md:max-w-2xl rounded-[12px] bg-white shadow-lg border border-primary/10 overflow-hidden"
         role="dialog"
         aria-modal
         aria-label="Quick view"
@@ -88,7 +109,7 @@ export function QuickViewModal({ productId, onClose }: QuickViewModalProps) {
               {product.description && (
                 <p className="text-sm text-primary/70 mt-2 line-clamp-3">{product.description}</p>
               )}
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2 items-center">
                 <Button
                   variant="accent"
                   size="sm"
@@ -98,14 +119,62 @@ export function QuickViewModal({ productId, onClose }: QuickViewModalProps) {
                       productId: product._id,
                       name: product.name,
                       price: effectivePrice,
+                      image: product.images?.[0],
+                    });
+                    eventsApi?.track?.({
+                      event: 'add_to_cart',
+                      productId: product._id,
+                      productName: product.name,
+                      qty: 1,
+                      source: 'quick_view',
                     });
                     onClose();
                   }}
                 >
                   {product.stock === 0 ? 'Out of stock' : 'Add to cart'}
                 </Button>
+                {hasToken && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const inList = wishlistIds.has(product._id);
+                        if (inList) await wishlistApi.remove(product._id);
+                        else {
+                          await wishlistApi.add(product._id);
+                          eventsApi?.track?.({
+                            event: 'add_to_wishlist',
+                            productId: product._id,
+                            productName: product.name,
+                            category: product.category,
+                            source: 'quick_view',
+                          });
+                        }
+                        refetchWishlist();
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                    className="p-2 rounded-full border border-primary/20 hover:bg-primary/5 text-primary/70 hover:text-red-500"
+                    aria-label={wishlistIds.has(product._id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                  >
+                    {wishlistIds.has(product._id) ? '❤' : '♡'}
+                  </button>
+                )}
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/products/${product._id}`} onClick={onClose}>
+                  <Link
+                    href={`/products/${product._id}`}
+                    onClick={() => {
+                      eventsApi?.track?.({
+                        event: 'view_full_details',
+                        productId: product._id,
+                        productName: product.name,
+                        category: product.category,
+                        source: 'quick_view',
+                      });
+                      onClose();
+                    }}
+                  >
                     View full details
                   </Link>
                 </Button>

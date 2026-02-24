@@ -1,9 +1,12 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Plus, Minus } from 'lucide-react';
 import { productsApi, reviewsApi, wishlistApi, deliveryApi, type ProductFromApi, type ReviewFromApi } from '@/lib/api';
+import { eventsApi } from '@/lib/api/events';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ProductGallery } from '@/components/product/ProductGallery';
@@ -34,7 +37,13 @@ export default function ProductDetailPage() {
   const [recentProducts, setRecentProducts] = useState<ProductFromApi[]>([]);
   const [helpfulCounts, setHelpfulCounts] = useState<Record<string, { yes: number; no: number }>>({});
   const [votedHelpful, setVotedHelpful] = useState<Set<string>>(new Set());
+  const [addQty, setAddQty] = useState(1);
+  const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
+  const setItems = useCartStore((s) => s.setItems);
+  const updateQty = useCartStore((s) => s.updateQty);
+  const cartItems = useCartStore((s) => s.items);
+  const cartLine = product ? cartItems.find((i) => i.productId === product._id) : null;
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
 
   useEffect(() => {
@@ -48,6 +57,17 @@ export default function ProductDetailPage() {
       setSimilarProducts(list.filter((p) => p._id !== product._id).slice(0, 4));
     }).catch(() => setSimilarProducts([]));
   }, [product]);
+
+  useEffect(() => {
+    if (!product) return;
+    eventsApi?.track?.({
+      event: 'product_view',
+      productId: product._id,
+      productName: product.name,
+      category: product.category,
+      source: 'product_page',
+    });
+  }, [product?._id]);
 
   useEffect(() => {
     if (!product) return;
@@ -69,7 +89,16 @@ export default function ProductDetailPage() {
     try {
       const inList = wishlistIds.has(product._id);
       if (inList) await wishlistApi.remove(product._id);
-      else await wishlistApi.add(product._id);
+      else {
+        await wishlistApi.add(product._id);
+        eventsApi?.track?.({
+          event: 'add_to_wishlist',
+          productId: product._id,
+          productName: product.name,
+          category: product.category,
+          source: 'product_page',
+        });
+      }
       refetchWishlist();
     } catch (e) {
       console.error(e);
@@ -110,14 +139,25 @@ export default function ProductDetailPage() {
         ]}
         className="mb-6"
       />
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-[1.1fr_1fr]">
         <div>
           <ProductGallery
             images={product.images?.length ? product.images as string[] : []}
             productName={product.name}
+            productId={product._id}
+            category={product.category}
+            onZoom={() => {
+              eventsApi?.track?.({
+                event: 'product_zoom',
+                productId: product._id,
+                productName: product.name,
+                category: product.category,
+                source: 'product_page',
+              });
+            }}
           />
         </div>
-        <div>
+        <div className="md:sticky md:top-20 md:self-start">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-display text-2xl font-semibold text-primary">{product.name}</h1>
             <StarRating value={product.avgRating ?? avgRating} count={product.reviewCount ?? reviewCount} />
@@ -158,7 +198,7 @@ export default function ProductDetailPage() {
           </p>
           <div className="mb-6 p-4 rounded-[12px] border border-primary/10 bg-primary/[0.02]">
             <p className="text-sm font-medium text-primary mb-2">Check delivery to your pincode</p>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2">
               <Input
                 placeholder="Enter 6-digit pincode"
                 value={pincode}
@@ -166,13 +206,14 @@ export default function ProductDetailPage() {
                   setPincode(e.target.value.replace(/\D/g, '').slice(0, 6));
                   setDeliveryMessage(null);
                 }}
-                className="max-w-[140px]"
+                className="h-10 max-w-[140px]"
                 maxLength={6}
               />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
+                className="h-10"
                 disabled={checkingDelivery || pincode.length !== 6}
                 onClick={async () => {
                   setCheckingDelivery(true);
@@ -201,25 +242,86 @@ export default function ProductDetailPage() {
               Out of stock
             </Button>
           ) : (
-            <Button
-              variant="accent"
-              size="lg"
-              onClick={() => {
-                const effectivePrice =
-                  product.discountedPrice != null &&
-                  product.discountedPrice > 0 &&
-                  product.discountedPrice < product.price
-                    ? product.discountedPrice
-                    : product.price;
-                addItem({
-                  productId: product._id,
-                  name: product.name,
-                  price: effectivePrice,
-                });
-              }}
-            >
-              Add to Cart
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1 border border-primary/20 rounded-[12px]">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 w-10 p-0 shrink-0"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (cartLine) {
+                      updateQty(product._id, Math.max(1, cartLine.qty - 1));
+                    } else {
+                      setAddQty((q) => Math.max(1, q - 1));
+                    }
+                  }}
+                  aria-label="Decrease quantity"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="w-8 text-center text-sm font-medium tabular-nums" aria-live="polite">
+                  {cartLine ? cartLine.qty : addQty}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 w-10 p-0 shrink-0"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const maxQty = product.stock != null ? product.stock : 99;
+                    if (cartLine) {
+                      updateQty(product._id, Math.min(maxQty, cartLine.qty + 1));
+                    } else {
+                      setAddQty((q) => Math.min(maxQty, q + 1));
+                    }
+                  }}
+                  aria-label="Increase quantity"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {cartLine ? (
+                <Button variant="accent" size="sm" className="h-10 px-5" asChild>
+                  <Link href="/cart">View cart</Link>
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 px-5"
+                  onClick={() => {
+                    const effectivePrice =
+                      product.discountedPrice != null &&
+                      product.discountedPrice > 0 &&
+                      product.discountedPrice < product.price
+                        ? product.discountedPrice
+                        : product.price;
+                    addItem({
+                      productId: product._id,
+                      name: product.name,
+                      price: effectivePrice,
+                      qty: addQty,
+                      image: product.images?.[0],
+                    });
+                    eventsApi?.track?.({
+                      event: 'add_to_cart',
+                      productId: product._id,
+                      productName: product.name,
+                      category: product.category,
+                      qty: addQty,
+                      source: 'product_page',
+                    });
+                  }}
+                >
+                  Add to Cart
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -293,7 +395,19 @@ export default function ProductDetailPage() {
             {similarProducts.map((p) => (
               <Link key={p._id} href={`/products/${p._id}`}>
                 <Card className="overflow-hidden h-full transition-shadow hover:shadow-soft-hover">
-                  <div className="aspect-square bg-secondary/50" />
+                  <div className="relative aspect-square bg-secondary/50 overflow-hidden">
+                    {p.images?.[0] ? (
+                      <Image
+                        src={p.images[0]}
+                        alt={p.name}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 25vw"
+                        className="object-cover object-center"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-primary/40 text-sm">No image</div>
+                    )}
+                  </div>
                   <CardContent className="p-3">
                     <p className="font-medium text-primary text-sm line-clamp-2">{p.name}</p>
                     <ProductPrice
@@ -313,11 +427,23 @@ export default function ProductDetailPage() {
       {recentProducts.length > 0 && (
         <div className="mt-12 border-t border-primary/10 pt-8">
           <h2 className="font-display text-xl font-semibold text-primary mb-4">Recently viewed</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {recentProducts.map((p) => (
               <Link key={p._id} href={`/products/${p._id}`}>
                 <Card className="overflow-hidden h-full transition-shadow hover:shadow-soft-hover">
-                  <div className="aspect-square bg-secondary/50" />
+                  <div className="relative aspect-square bg-secondary/50 overflow-hidden">
+                    {p.images?.[0] ? (
+                      <Image
+                        src={p.images[0]}
+                        alt={p.name}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 25vw"
+                        className="object-cover object-center"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-primary/40 text-sm">No image</div>
+                    )}
+                  </div>
                   <CardContent className="p-3">
                     <p className="font-medium text-primary text-sm line-clamp-2">{p.name}</p>
                     <ProductPrice

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { productsApi } from '@/lib/api';
+import { eventsApi } from '@/lib/api/events';
 import { getCompareIds, removeFromCompare } from '@/lib/compare';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button';
@@ -66,8 +67,8 @@ export default function ComparePage() {
     <div className="container-custom py-10">
       <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Compare' }]} className="mb-6" />
       <h1 className="font-display text-2xl font-semibold text-primary mb-8">Compare products</h1>
-      <div className="overflow-x-auto">
-        <div className="flex gap-4 min-w-max pb-4">
+      <div className="overflow-x-auto lg:max-w-5xl">
+        <div className="flex gap-4 md:gap-6 min-w-max pb-4">
           {products.map((p) => (
             <Card key={p._id} className="w-64 shrink-0 overflow-hidden">
               <div className="relative">
@@ -102,7 +103,18 @@ export default function ComparePage() {
                   <p className="text-xs text-primary/70 mt-2 line-clamp-3">{p.description}</p>
                 )}
                 <Button asChild size="sm" className="mt-3 w-full">
-                  <Link href={`/products/${p._id}`}>View details</Link>
+                  <Link
+                    href={`/products/${p._id}`}
+                    onClick={() => eventsApi?.track?.({
+                      event: 'view_full_details',
+                      productId: p._id,
+                      productName: p.name,
+                      category: p.category,
+                      source: 'compare',
+                    })}
+                  >
+                    View details
+                  </Link>
                 </Button>
               </div>
             </Card>

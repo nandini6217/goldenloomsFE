@@ -1,5 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-import { api } from '../api-client';
+import { api, API_URL } from '../api-client';
 
 export { setAuthToken } from '../api-client';
 

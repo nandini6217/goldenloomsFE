@@ -31,4 +31,46 @@ body::before {
   .divider-gold {
     @apply h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent;
   }
+  .animate-shimmer {
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+  .animate-hero-in {
+    animation: hero-in 0.6s ease-out forwards;
+  }
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer {
+    animation: none;
+  }
+  .animate-hero-in {
+    animation: none;
+  }
 }

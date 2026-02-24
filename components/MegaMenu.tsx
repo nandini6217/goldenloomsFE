@@ -21,6 +21,13 @@ const CATEGORIES = [
     href: '/products?category=HANDLOOM',
     image: 'https://cdn.shopify.com/s/files/1/0443/7553/9878/files/Screen_Shot_2020-09-30_at_5.48.40_pm_1024x1024.jpg?v=1601471934',
   },
+  {
+    id: 'OTHERS',
+    name: 'Others Collection',
+    description: 'More handcrafted picks',
+    href: '/products?category=OTHERS',
+    image: 'https://images.pexels.com/photos/7256261/pexels-photo-7256261.jpeg',
+  },
 ] as const;
 
 export function MegaMenu() {
