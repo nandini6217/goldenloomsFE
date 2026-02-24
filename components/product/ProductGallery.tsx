@@ -6,9 +6,12 @@ import Image from 'next/image';
 type ProductGalleryProps = {
   images: string[];
   productName: string;
+  productId?: string;
+  category?: string;
+  onZoom?: () => void;
 };
 
-export function ProductGallery({ images, productName }: ProductGalleryProps) {
+export function ProductGallery({ images, productName, productId, category, onZoom }: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxZoom, setLightboxZoom] = useState(1);
@@ -110,7 +113,10 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
         {/* Main image - Flipkart style: large on top, click to zoom/open lightbox */}
         <button
           type="button"
-          onClick={() => setLightboxOpen(true)}
+          onClick={() => {
+            setLightboxOpen(true);
+            onZoom?.();
+          }}
           className="block w-full aspect-square rounded-[12px] bg-secondary/30 border border-primary/10 overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent/50 relative"
           aria-label="View full size and zoom"
         >

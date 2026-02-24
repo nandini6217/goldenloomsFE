@@ -7,6 +7,7 @@ export const productsApi = {
   list: (params?: {
     search?: string;
     category?: string;
+    subcategory?: string;
     sort?: string;
     featured?: boolean;
     ids?: string;

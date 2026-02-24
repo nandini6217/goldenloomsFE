@@ -20,19 +20,20 @@ type Product = {
   images?: string[];
 };
 
-function FeaturedSectionHeader() {
+const CAROUSEL_ITEM_MIN_WIDTH = 280;
+const NEW_ARRIVALS_LIMIT = 10;
+
+function NewArrivalsSectionHeader() {
   return (
     <div className="text-center mb-6 md:mb-10">
       <h2 className="font-display font-semibold text-primary text-xl sm:text-2xl md:text-3xl">
-        Featured
+        New Arrivals
       </h2>
-      <p className="text-sm text-primary/70 mt-2">Curated favorites from our artisans</p>
+      <p className="text-sm text-primary/70 mt-2">Just added</p>
       <div className="w-16 h-0.5 bg-accent mx-auto mt-4 rounded-full" aria-hidden />
     </div>
   );
 }
-
-const CAROUSEL_ITEM_MIN_WIDTH = 280;
 
 function SkeletonCard() {
   return (
@@ -47,23 +48,23 @@ function SkeletonCard() {
   );
 }
 
-export function FeaturedProducts() {
+export function NewArrivals() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     productsApi
-      .list({ featured: true })
-      .then(setProducts)
+      .list({ sort: 'newest' })
+      .then((data) => setProducts(Array.isArray(data) ? data.slice(0, NEW_ARRIVALS_LIMIT) : []))
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);
 
   return (
     <>
-      <FeaturedSectionHeader />
+      <NewArrivalsSectionHeader />
       {loading ? (
-        <HorizontalCarousel aria-label="Featured products loading" itemMinWidth={CAROUSEL_ITEM_MIN_WIDTH} gap="gap-4">
+        <HorizontalCarousel aria-label="New arrivals loading" itemMinWidth={CAROUSEL_ITEM_MIN_WIDTH} gap="gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <HorizontalCarouselItem key={i} minWidth={CAROUSEL_ITEM_MIN_WIDTH}>
               <SkeletonCard />
@@ -72,19 +73,19 @@ export function FeaturedProducts() {
         </HorizontalCarousel>
       ) : products.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-primary/70 mb-4">No featured products yet. Explore our full collection!</p>
+          <p className="text-primary/70 mb-4">No new arrivals yet. Explore our collection!</p>
           <Link
             href="/products"
             className="inline-flex items-center justify-center rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white hover:bg-accent/90 transition-colors"
           >
-            Explore all products
+            View all products
           </Link>
         </div>
       ) : (
-        <HorizontalCarousel aria-label="Featured products" itemMinWidth={CAROUSEL_ITEM_MIN_WIDTH} gap="gap-4">
-          {products.slice(0, 6).map((p, index) => (
+        <HorizontalCarousel aria-label="New arrivals" itemMinWidth={CAROUSEL_ITEM_MIN_WIDTH} gap="gap-4">
+          {products.map((p, index) => (
             <HorizontalCarouselItem key={p._id} minWidth={CAROUSEL_ITEM_MIN_WIDTH}>
-              <FeaturedProductCard product={p} priority={index < 3} />
+              <NewArrivalsProductCard product={p} priority={index < 3} />
             </HorizontalCarouselItem>
           ))}
         </HorizontalCarousel>
@@ -93,7 +94,7 @@ export function FeaturedProducts() {
   );
 }
 
-function FeaturedProductCard({ product: p, priority }: { product: Product; priority?: boolean }) {
+function NewArrivalsProductCard({ product: p, priority }: { product: Product; priority?: boolean }) {
   const hasDiscount =
     p.discountedPrice != null && p.discountedPrice > 0 && p.discountedPrice < p.price;
   const discountPct = hasDiscount

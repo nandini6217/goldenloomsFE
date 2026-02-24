@@ -58,6 +58,9 @@ export function MobileShopAccordion({ onLinkClick }: { onLinkClick: () => void }
           <MobileNavLink href="/products?category=HANDLOOM" onClick={onLinkClick}>
             Woolen Handloom
           </MobileNavLink>
+          <MobileNavLink href="/products?category=OTHERS" onClick={onLinkClick}>
+            Others Collection
+          </MobileNavLink>
           <MobileNavLink href="/products?featured=true" onClick={onLinkClick}>
             Featured
           </MobileNavLink>

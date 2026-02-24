@@ -9,6 +9,7 @@ export type ProductFromApi = {
   description?: string;
   images?: string[];
   stock?: number;
+  subcategory?: string | null;
   avgRating?: number;
   reviewCount?: number;
 };
