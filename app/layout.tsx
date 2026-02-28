@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Playfair_Display, Poppins } from 'next/font/google';
 import './globals.css';
 import { LayoutWrapper } from '@/components/LayoutWrapper';
@@ -64,6 +64,12 @@ export const metadata: Metadata = {
       'Where Resin Elegance Meets Handloom Heritage. Premium handcrafted resin jewelry and woolen handloom products.',
     images: ['https://images.pexels.com/photos/7256261/pexels-photo-7256261.jpeg'],
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({

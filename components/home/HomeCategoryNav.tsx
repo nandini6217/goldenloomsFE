@@ -14,16 +14,7 @@ export const LEVEL1 = [
   { id: 'others', label: 'Others', mobileLabel: 'Other', apiCategory: 'OTHERS' as const },
 ] as const;
 
-const LEVEL2 = [
-  { id: 'home_decor', label: 'Home Decor', apiSubcategory: 'HOME_DECOR' as const },
-  { id: 'fashion', label: 'Fashion', apiSubcategory: 'FASHION' as const },
-  { id: 'spiritual', label: 'Spiritual', apiSubcategory: 'SPIRITUAL' as const },
-  { id: 'gifts', label: 'Gifts', apiSubcategory: 'GIFTS' as const },
-  { id: 'others', label: 'Others', apiSubcategory: 'OTHERS' as const },
-] as const;
-
 type Level1Id = (typeof LEVEL1)[number]['id'];
-type Level2Id = (typeof LEVEL2)[number]['id'];
 
 type Product = {
   _id: string;
@@ -39,18 +30,12 @@ type Product = {
 export function useHomeCategoryParams() {
   const searchParams = useSearchParams();
   const primary = (searchParams.get('primary') as Level1Id) || 'all';
-  const secondary = (searchParams.get('secondary') as Level2Id) || 'home_decor';
-  return { primary, secondary };
+  return { primary };
 }
 
-export function setHomeCategoryParams(
-  router: ReturnType<typeof useRouter>,
-  primary: Level1Id,
-  secondary: Level2Id
-) {
+export function setHomeCategoryParams(router: ReturnType<typeof useRouter>, primary: Level1Id) {
   const p = new URLSearchParams();
   if (primary !== 'all') p.set('primary', primary);
-  if (secondary !== 'home_decor') p.set('secondary', secondary);
   router.push(p.toString() ? `/?${p.toString()}` : '/');
 }
 
@@ -69,10 +54,10 @@ export const HOME_CATEGORY_TAB_STYLES = {
   inactive: 'text-neutral-600 hover:text-primary/80 border-b-2 border-transparent',
 } as const;
 
-/** Myntra-style: search bar + Level 1 + Level 2 chips. Place above hero. */
+/** Search bar + Level 1 category chips. Place above hero. */
 export function HomeCategoryNav() {
   const router = useRouter();
-  const { primary, secondary } = useHomeCategoryParams();
+  const { primary } = useHomeCategoryParams();
   const [searchInput, setSearchInput] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
@@ -115,7 +100,7 @@ export function HomeCategoryNav() {
           <button
             key={item.id}
             type="button"
-            onClick={() => setHomeCategoryParams(router, item.id, secondary)}
+            onClick={() => setHomeCategoryParams(router, item.id)}
             className={`${chipBase} ${primary === item.id ? chipActive : chipInactive}`}
             aria-pressed={primary === item.id}
           >
@@ -123,48 +108,27 @@ export function HomeCategoryNav() {
           </button>
         ))}
       </div>
-
-      {/* Level 2: compact pill filters */}
-      <div aria-label="Filter by type">
-        {/* <p className="text-xs font-semibold uppercase tracking-wider text-primary/60 mb-1">Type</p> */}
-        <div className="home-category-nav-level2 -mx-1 flex gap-1.5 overflow-x-auto overflow-y-hidden pb-0.5 pt-0.5 md:mx-0 md:flex-wrap md:gap-2 scrollbar-hide">
-          {LEVEL2.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setHomeCategoryParams(router, primary, item.id)}
-              className={`${chipBase} ${secondary === item.id ? chipActive : chipInactive}`}
-              aria-pressed={secondary === item.id}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
 
-/** Myntra-style product grid with section heading. Place below hero. */
+/** Product grid with section heading. Place below hero. */
 export function HomeDashboardProducts() {
-  const { primary, secondary } = useHomeCategoryParams();
+  const { primary } = useHomeCategoryParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   const categoryParam =
     primary === 'resin' ? 'RESIN' : primary === 'woollen' ? 'HANDLOOM' : primary === 'others' ? 'OTHERS' : undefined;
-  // Only filter by subcategory when a category is selected; when "All" is selected, show all products
-  const subcategoryParam =
-    categoryParam && secondary ? LEVEL2.find((l) => l.id === secondary)?.apiSubcategory : undefined;
 
   const fetchProducts = useCallback(() => {
     setLoading(true);
     productsApi
-      .list({ category: categoryParam, subcategory: subcategoryParam })
+      .list({ category: categoryParam })
       .then((data: Product[]) => setProducts(Array.isArray(data) ? data : []))
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
-  }, [categoryParam, subcategoryParam]);
+  }, [categoryParam]);
 
   useEffect(() => {
     fetchProducts();

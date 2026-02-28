@@ -260,7 +260,7 @@ function ProductsContent() {
       )}
 
       {/* Mobile: search only - sticky below header when scrolling */}
-      <div className="md:hidden sticky top-14 z-30 py-3 bg-white border-b border-primary/10 mb-4">
+      <div className="md:hidden sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-30 py-3 bg-white border-b border-primary/10 mb-4">
         <form
           className="flex gap-2"
           onSubmit={(e) => {

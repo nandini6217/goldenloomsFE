@@ -23,7 +23,7 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const isHomePage = pathname === '/';
-  const { primary, secondary } = useHomeCategoryParams();
+  const { primary } = useHomeCategoryParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [compareCount, setCompareCount] = useState(0);
@@ -56,7 +56,7 @@ export function Header() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-primary/10 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-primary/10 bg-white/95 backdrop-blur pt-[env(safe-area-inset-top)]">
       <div className="container-custom mx-auto flex h-14 min-h-14 flex-wrap items-center justify-between gap-2 px-3 py-3 sm:px-6 md:h-16 md:flex-nowrap md:py-0">
         <Link
           href="/"
@@ -197,7 +197,7 @@ export function Header() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setHomeCategoryParams(router, item.id, secondary)}
+                onClick={() => setHomeCategoryParams(router, item.id)}
                 className={`${HOME_CATEGORY_TAB_STYLES.tab} ${primary === item.id ? HOME_CATEGORY_TAB_STYLES.active : HOME_CATEGORY_TAB_STYLES.inactive}`}
                 aria-pressed={primary === item.id}
               >
